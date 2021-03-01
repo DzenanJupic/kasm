@@ -1,0 +1,4 @@
+dload 65
+store 0
+int 0
+end

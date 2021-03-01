@@ -1,0 +1,18 @@
+[package]
+name = "kasm"
+version = "0.1.0"
+authors = ["Dzenan Jupic <56133904+DzenanJupic@users.noreply.github.com>"]
+edition = "2018"
+
+[[bin]]
+name = "kasm"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.38"
+byte-slice-cast = "1.0.0"
+clap = "3.0.0-beta.2"
+num-derive = "0.3.3"
+num-traits = "0.2.14"
+strum = { version = "0.20.0", features = ["derive"] }
+thiserror = "1.0.24"

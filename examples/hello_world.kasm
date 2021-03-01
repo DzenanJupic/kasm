@@ -1,0 +1,28 @@
+dload 72    ; H
+store 0
+dload 69    ; E
+store 1
+dload 76    ; L
+store 2
+dload 76    ; L
+store 3
+dload 79    ; O
+store 4
+dload 32    ; Space
+store 5
+dload 87    ; W
+store 6
+dload 79    ; O
+store 7
+dload 82    ; R
+store 8
+dload 79    ; L
+store 9
+dload 68    ; D
+store 10
+dload 33   ; !
+store 11
+
+int 0       ; print
+
+end
