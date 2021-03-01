@@ -2,8 +2,8 @@ use anyhow::Result;
 use byte_slice_cast::AsByteSlice;
 use num_traits::FromPrimitive;
 
-use crate::command::Command;
 use crate::error::Error;
+use crate::instruction::Instruction;
 use crate::interrupt::Interrupt;
 use crate::RAM;
 
@@ -38,16 +38,16 @@ impl CPU {
     }
 
     pub fn step(&mut self) -> Result<Ended> {
-        let (cmd, value) = self.next_cmd()?;
-        self.exec(cmd, value)
+        let (inst, value) = self.next_inst()?;
+        self.exec(inst, value)
     }
 
-    pub fn exec(&mut self, cmd: Command, value: i16) -> Result<Ended> {
-        use Command::*;
+    pub fn exec(&mut self, inst: Instruction, value: i16) -> Result<Ended> {
+        use Instruction::*;
 
         let mut ended = false;
 
-        match cmd {
+        match inst {
             LOAD => {
                 self.A = self.Rx[clip(value) as usize];
                 self.SR = 0;
@@ -89,17 +89,17 @@ impl CPU {
         Ok(ended)
     }
 
-    fn next_cmd(&mut self) -> Result<(Command, i16)> {
-        let (cmd, value) = self.ram
+    fn next_inst(&mut self) -> Result<(Instruction, i16)> {
+        let (inst, value) = self.ram
             .get(self.BZ as usize)
             .copied()
             .ok_or(Error::NoMoreInstructions { BZ: self.BZ })?;
 
-        let cmd = Command::from_u16(cmd)
-            .ok_or(Error::InvalidCommand { cmd, BZ: self.BZ })?;
+        let inst = Instruction::from_u16(inst)
+            .ok_or(Error::InvalidInstruction { inst, BZ: self.BZ })?;
 
         self.BZ = self.BZ.wrapping_add(1);
-        Ok((cmd, value))
+        Ok((inst, value))
     }
 
     fn calc<F: FnOnce(i16, i16) -> (i16, bool)>(&mut self, value: i16, func: F) {
@@ -155,7 +155,7 @@ impl CPU {
 
                 if self.ram.len() <= index {
                     self.ram.extend(
-                        (0..=index - self.ram.len()).map(|_| (Command::NOOP as u16, 0))
+                        (0..=index - self.ram.len()).map(|_| (Instruction::NOOP as u16, 0))
                     );
                 }
 
@@ -163,8 +163,8 @@ impl CPU {
             }
             StoreBZ => self.BZ = self.A as u16,
             Step => {
-                let (cmd, value) = self.next_cmd()?;
-                let ended = self.exec(cmd, value)?;
+                let (inst, value) = self.next_inst()?;
+                let ended = self.exec(inst, value)?;
                 anyhow::ensure!(!ended, Error::EndedInInterrupt);
             }
             Exec => {

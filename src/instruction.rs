@@ -3,7 +3,7 @@ use strum::{Display, EnumString, EnumVariantNames};
 
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq, FromPrimitive, EnumVariantNames)]
-pub enum Command {
+pub enum Instruction {
     LOAD,
     DLOAD,
     STORE,
@@ -24,7 +24,7 @@ pub enum Command {
     INT,
 }
 
-impl Command {
+impl Instruction {
     pub fn takes_value(self) -> bool {
         match self {
             Self::END | Self::NOOP => false,

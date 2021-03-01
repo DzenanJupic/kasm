@@ -61,7 +61,7 @@ impl RunTimeCmd {
                 }
             }
             RunTimeCmd::Instructions => {
-                for (i, variant) in crate::command::Command::VARIANTS.iter().enumerate() {
+                for (i, variant) in crate::instruction::Instruction::VARIANTS.iter().enumerate() {
                     println!("{:02}: {}", i, variant);
                 }
             },
@@ -86,10 +86,10 @@ pub fn run_shell(mut args: crate::Args, mut cpu: CPU) {
 
             if is_ended { break; }
         } else {
-            let cmd_value = try_continue!(crate::lexer::parse_line(&buffer, !args.run_only));
+            let inst_value = try_continue!(crate::lexer::parse_line(&buffer, !args.run_only));
 
-            if let Some((cmd, value)) = cmd_value {
-                let ended = try_continue!(cpu.exec(cmd, value));
+            if let Some((inst, value)) = inst_value {
+                let ended = try_continue!(cpu.exec(inst, value));
                 if ended { break; }
             }
         }

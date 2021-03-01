@@ -6,19 +6,19 @@ use std::path::PathBuf;
 
 use clap::Clap;
 
-use crate::command::Command;
 use crate::cpu::CPU;
+use crate::instruction::Instruction;
 
-mod command;
+mod instruction;
 mod cpu;
 mod interrupt;
 mod lexer;
 mod error;
 mod shell;
 
-type RAM = Vec<RawCmd>;
-type Cmd = (Command, i16);
-type RawCmd = (u16, i16);
+type RAM = Vec<RawInst>;
+type Inst = (Instruction, i16);
+type RawInst = (u16, i16);
 
 
 #[derive(Clap)]
@@ -30,7 +30,7 @@ pub struct Args {
     compile_only: bool,
     #[clap(short = 'R', long, about = "Only run the file, without compiling it")]
     run_only: bool,
-    #[clap(short = 's', long, about = "Don't run the commands, just load them into RAM", requires = "interactive", conflicts_with = "compile-only")]
+    #[clap(short = 's', long, about = "Don't run the instructions, just load them into RAM", requires = "interactive", conflicts_with = "compile-only")]
     step: bool,
     #[clap(short, long, about = "Open an interactive shell (after running the file)")]
     interactive: bool,

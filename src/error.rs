@@ -6,10 +6,10 @@ pub enum Error {
     )]
     NoMoreInstructions { BZ: u16 },
     #[error(
-    "Tried to parse `{cmd}` at BZ=`{BZ}` to a command, but it is not a valid instruction\n\
+    "Tried to parse `{inst}` at BZ=`{BZ}` to an instruction, but it is not a valid instruction\n\
     Note: To see a list of all instructions, execute `/instructions` in the shell"
     )]
-    InvalidCommand { cmd: u16, BZ: u16 },
+    InvalidInstruction { inst: u16, BZ: u16 },
     #[error(
     "Tried to parse `{int}` at BZ=`{BZ}` to an interrupt, but it is not a valid interrupt\n\
     Note: To see a list of all interrupts, execute `/interrupts` in the shell"
