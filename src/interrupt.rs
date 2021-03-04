@@ -1,16 +1,17 @@
 use num_derive::FromPrimitive;
-use strum::{Display, EnumVariantNames};
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, Display, PartialEq, Eq, FromPrimitive, EnumVariantNames)]
+#[repr(u64)]
+#[derive(Clone, Copy, Debug, FromPrimitive)]
 pub enum Interrupt {
     Print,
     PrintBytes,
-    DumpRegisters,
-    StoreRam,
-    StoreBZ,
+
+    DumpA,
+    DumpBZ,
+    DumpRx,
+    DumpRam,
+
     Step,
-    Exec,
-    ClearRam,
-    Clear,
+    StepToEnd,
+    StepToBP,
 }

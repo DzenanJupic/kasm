@@ -1,66 +1,15 @@
-#![feature(str_split_once, core_intrinsics, intrinsics)]
-#![feature(array_methods)]
-#![allow(non_snake_case)]
+use anyhow::Result;
 
-use std::path::PathBuf;
+use kasm::{cpu::{CPU, ExecResult}, lexer::Document, RAM};
 
-use clap::Clap;
+fn main() -> Result<()> {
+    let file = std::fs::read_to_string(r"C:\Users\info\Code\Rust\kasm\examples\loop.kasm")?;
+    let doc = Document::from_str(&file)?;
 
-use crate::cpu::CPU;
-use crate::instruction::Instruction;
+    let mut ram = doc.as_ram();
+    let mut cpu = CPU::new(&mut ram, std::io::stdout());
 
-mod instruction;
-mod cpu;
-mod interrupt;
-mod lexer;
-mod error;
-mod shell;
-
-type RAM = Vec<RawInst>;
-type Inst = (Instruction, i16);
-type RawInst = (u16, i16);
-
-
-#[derive(Clap)]
-#[clap(version = "0.1.0", author = "Dzenan Jupic <info@dzenanjupic.de>", about = "A klett asm compiler")]
-pub struct Args {
-    #[clap(about = "The file to run", required_unless_present = "interactive")]
-    file: Option<PathBuf>,
-    #[clap(short = 'C', long, about = "Only compile the file, without running it", conflicts_with = "interactive")]
-    compile_only: bool,
-    #[clap(short = 'R', long, about = "Only run the file, without compiling it")]
-    run_only: bool,
-    #[clap(short = 's', long, about = "Don't run the instructions, just load them into RAM", requires = "interactive", conflicts_with = "compile-only")]
-    step: bool,
-    #[clap(short, long, about = "Open an interactive shell (after running the file)")]
-    interactive: bool,
-}
-
-fn main() -> anyhow::Result<()> {
-    let args: Args = Args::parse();
-
-    let mut cpu = match args.file {
-        Some(ref path) => file_to_cpu(path, &args)?,
-        None => cpu::CPU::default()
-    };
-
-    if !args.compile_only && !args.step {
-        cpu.step_to_end()?;
-    }
-
-    if args.interactive {
-        shell::run_shell(args, cpu);
-    }
+    cpu.step_to_end()?;
 
     Ok(())
-}
-
-fn file_to_cpu(path: &PathBuf, args: &Args) -> anyhow::Result<CPU> {
-    let cmds = lexer::parse_file(&path, !args.run_only)?;
-
-    if !args.run_only {
-        lexer::to_file(path.with_extension("kbin"), cmds.clone())?;
-    }
-
-    Ok(cpu::CPU::with_ram(cmds))
 }

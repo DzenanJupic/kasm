@@ -1,8 +1,8 @@
 use num_derive::FromPrimitive;
-use strum::{Display, EnumString, EnumVariantNames};
+use strum::EnumString;
 
-#[repr(u16)]
-#[derive(Clone, Copy, Debug, Display, EnumString, PartialEq, Eq, FromPrimitive, EnumVariantNames)]
+#[repr(u64)]
+#[derive(Clone, Copy, Debug, EnumString, FromPrimitive, derive_more::Display)]
 pub enum Instruction {
     LOAD,
     DLOAD,
@@ -20,8 +20,20 @@ pub enum Instruction {
     JNE,
     END,
 
+    BP,
     NOOP,
     INT,
+}
+
+impl Instruction {
+    pub fn takes_argument(self) -> bool {
+        use Instruction::*;
+
+        match self {
+            END | BP | NOOP => false,
+            _ => true
+        }
+    }
 }
 
 impl Instruction {

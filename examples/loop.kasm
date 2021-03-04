@@ -1,28 +1,28 @@
-dload 9         ; number of iterations
-store 2         ; store iterations in Rx[2]
+dload 9             ; number of iterations
+store 2             ; store iterations in Rx[2]
 
-dload 47        ; '/'
-store 1         ; store '/' in Rx[1]
-dload 48        ; '0'
-store 0         ; store '0' in Rx[0]
-load 2          ; load iterations from Rx[2]
-add 0           ; add initial counter to iterations
-store 2         ; store iterations back to Rx[2] 
+dload 47            ; '/'
+store 1             ; store '/' in Rx[1]
+dload 48            ; '0'
+store 0             ; store '0' in Rx[0]
+load 2              ; load iterations from Rx[2]
+add 0               ; add initial counter to iterations
+store 2             ; store iterations back to Rx[2] 
 
-; inc counter
-dload 1         ; store 1 in Rx[10] (1/2)
-store 10        ; store 1 in Rx[10] (2/2)
-load 0          ; load counter from Rx[0]
-add 10          ; add 1 (Rx[10) to counter
-store 0         ; store counter back to Rx[0]
-dload 0         ; clear Rx[10] (1/2)
-store 10        ; clear Rx[10] (2/2)
+.loop:              ; NOOP
+    dload 1         ; store 1 in Rx[10] (1/2)
+    store 10        ; store 1 in Rx[10] (2/2)
+    load 0          ; load counter from Rx[0]
+    add 10          ; add 1 (Rx[10) to counter
+    store 0         ; store counter back to Rx[0]
+    dload 0         ; clear Rx[10] (1/2)
+    store 10        ; clear Rx[10] (2/2)
+    
+    int 0           ; print counter/iterations
 
-int 0           ; print counter/iterations
-
-; check if counter is Rx[2]
-load 2          ; load iterations from Rx[2]
-sub 0           ; subtract counter from Rx[0]
-jgt 9           ; if A is greater to 0, jmp to inc counter
+    ; check if counter is Rx[2]
+    load 2          ; load iterations from Rx[2]
+    sub 0           ; subtract counter from Rx[0]
+    jgt .loop       ; if A is greater to 0, jmp to inc counter
 
 end

@@ -1,26 +1,63 @@
-#[derive(thiserror::Error, Debug)]
+use thiserror::Error;
+
+use crate::{IRS, URS};
+use crate::lexer::code_token::CodeToken;
+
+#[derive(Error, Debug)]
 pub enum Error {
     #[error(
-    "Failed to load the next instruction at BZ={BZ}, since there are no more instructions\n\
-    Note: Remember to always end your program with an `END` instruction"
+    "The instruction code `{inst}` at BZ={BZ} is not a valid instruction\n\
+    Note: Execute `/instructions` in the shell to get a list of all instructions"
     )]
-    NoMoreInstructions { BZ: u16 },
+    InvalidInstruction { inst: URS, BZ: URS },
     #[error(
-    "Tried to parse `{inst}` at BZ=`{BZ}` to an instruction, but it is not a valid instruction\n\
-    Note: To see a list of all instructions, execute `/instructions` in the shell"
+    "The interrupt code `{int}` at BZ={BZ} is not a valid interrupt\n\
+    Note: Execute `/interrupts` in the shell to get a list of all interrupts"
     )]
-    InvalidInstruction { inst: u16, BZ: u16 },
+    InvalidInterrupt { int: IRS, BZ: URS },
+    #[error("Attempted to divide {lhs} by zero at BZ={BZ}")]
+    DivideByZero { lhs: IRS, BZ: URS },
     #[error(
-    "Tried to parse `{int}` at BZ=`{BZ}` to an interrupt, but it is not a valid interrupt\n\
-    Note: To see a list of all interrupts, execute `/interrupts` in the shell"
+    "Attempted to access Rx[{i}] at BZ={BZ}\n\
+    Note: Rx has len {len}, and indexing starts at 0\n\
+    Note: Indexes must be positive"
     )]
-    InvalidInterrupt { int: u16, BZ: u16 },
-    #[error("Attempted to divide by zero")]
-    DivideByZero,
+    InvalidRxIndex { i: IRS, len: usize, BZ: URS },
     #[error(
-    "Tried to execute an `END` instruction inside an interrupt\n\
-     Note: This is invalid\n\
-     Note: Execute `END` directly instead"
+    "There are no more instructions at BZ={BZ}\n\
+    Note: Always end your program with an `END` instruction"
     )]
-    EndedInInterrupt,
+    NoMoreInstructions { BZ: URS },
+
+    #[error("The jump point {name} in line {line} is not defined in the document")]
+    UndefinedJumpPoint { name: String, line: usize },
+    #[error(
+    "Failed to parse `{s}` in line {line}\n\
+    Details: {err}"
+    )]
+    ParsingFailed { s: String, line: usize, err: ParseError },
+    #[error(
+    "The provided combination of tokens in line {line} is invalid\n\
+    Details: {err}"
+    )]
+    InvalidTokenArrangement { line: usize, err: ParseError },
+
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum ParseError {
+    #[error("Failed to parse the unknown token `{token}`")]
+    UnknownToken { token: String },
+    #[error("The line `{line}` contains more then two tokens")]
+    TooManyTokens { line: String },
+    #[error("The token `{token}` may not be the first in a line")]
+    TokenMayNotBeFirst { token: CodeToken },
+    #[error("The token `{token}` may not be the second in a line")]
+    TokenMayNotBeSecond { token: CodeToken },
+    #[error("The token `{token}` does take an argument, but no argument was supplied")]
+    TokenDoesTakeAnArgument { token: CodeToken },
+    #[error("The token `{token}` does not take an argument")]
+    TokenDoesNotTakeAnArgument { token: CodeToken },
 }
