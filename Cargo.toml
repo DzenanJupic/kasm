@@ -7,15 +7,10 @@ edition = "2018"
 [lib]
 path = "src/lib.rs"
 
-[[bin]]
-name = "kasm"
-path = "src/main.rs"
-
 [dependencies]
-anyhow = "1.0.38"
 byte-slice-cast = "1.0.0"
-clap = "3.0.0-beta.2"
 derive_more = "0.99.11"
+log = "0.4.14"
 num-derive = "0.3.3"
 num-traits = "0.2.14"
 strum = { version = "0.20.0", features = ["derive"] }

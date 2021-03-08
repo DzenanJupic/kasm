@@ -1,7 +1,7 @@
 use num_derive::FromPrimitive;
 
 #[repr(u64)]
-#[derive(Clone, Copy, Debug, FromPrimitive)]
+#[derive(Clone, Copy, Debug, FromPrimitive, strum::EnumVariantNames)]
 pub enum Interrupt {
     Print,
     PrintBytes,
@@ -10,8 +10,4 @@ pub enum Interrupt {
     DumpBZ,
     DumpRx,
     DumpRam,
-
-    Step,
-    StepToEnd,
-    StepToBP,
 }

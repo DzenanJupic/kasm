@@ -29,6 +29,12 @@ pub enum Error {
     )]
     NoMoreInstructions { BZ: URS },
 
+    #[error(
+    "The CPU made {0} steps in a row without a break\n\
+     Note: You probably entered an endless loop"
+    )]
+    TooManySteps(u64),
+
     #[error("The jump point {name} in line {line} is not defined in the document")]
     UndefinedJumpPoint { name: String, line: usize },
     #[error(

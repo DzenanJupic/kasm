@@ -8,12 +8,12 @@ use crate::instruction::Instruction;
 use crate::interrupt::Interrupt;
 
 #[derive(Debug)]
-pub struct CPU<'a, W> {
+pub struct CPU<W> {
     A: IRS,
     BZ: URS,
     Rx: [IRS; DATA_REGISTERS],
 
-    ram: &'a mut RAM,
+    ram: RAM,
     stdout: W,
 }
 
@@ -25,9 +25,9 @@ pub enum ExecResult {
     Print(String),
 }
 
-impl<'a, W> CPU<'a, W>
+impl<W> CPU<W>
     where W: Write {
-    pub fn new(ram: &'a mut RAM, stdout: W) -> Self {
+    pub fn new(ram: RAM, stdout: W) -> Self {
         Self {
             A: 0,
             BZ: 0,
@@ -37,24 +37,60 @@ impl<'a, W> CPU<'a, W>
         }
     }
 
-    pub fn step_to_breakpoint(&mut self) -> Result<()> {
+    pub fn A(&self) -> IRS {
+        self.A
+    }
+
+    pub fn BZ(&self) -> URS {
+        self.BZ
+    }
+
+    pub fn Rx(&self) -> &[IRS; DATA_REGISTERS] {
+        &self.Rx
+    }
+
+    pub fn ram(&self) -> &RAM {
+        &self.ram
+    }
+
+    pub fn set_ram(&mut self, ram: RAM) {
+        self.ram = ram;
+    }
+
+
+    pub fn step_to_breakpoint(&mut self, max_steps: u64) -> Result<()> {
+        let mut steps = 0;
+
         loop {
+            log::debug!("step | {:?}", self.BZ);
             match self.step()? {
                 ExecResult::Ended | ExecResult::HitBreakPoint => break,
                 ExecResult::Print(t) => self.println(t.as_bytes())?,
-                _ => {}
+                _ => {
+                    steps += 1;
+                    if steps >= max_steps {
+                        return Err(Error::TooManySteps(steps));
+                    }
+                }
             }
         }
 
         Ok(())
     }
 
-    pub fn step_to_end(&mut self) -> Result<()> {
+    pub fn step_to_end(&mut self, max_steps: u64) -> Result<()> {
+        let mut steps = 0;
+
         loop {
             match self.step()? {
                 ExecResult::Ended => break,
                 ExecResult::Print(t) => self.println(t.as_bytes())?,
-                _ => {}
+                _ => {
+                    steps += 1;
+                    if steps >= max_steps {
+                        return Err(Error::TooManySteps(steps));
+                    }
+                }
             }
         }
 
@@ -164,9 +200,6 @@ impl<'a, W> CPU<'a, W>
             DumpBZ => Ok(ExecResult::Print(self.BZ.to_string())),
             DumpRx => Ok(ExecResult::Print(format!("{:?}", self.Rx))),
             DumpRam => Ok(ExecResult::Print(format!("{:?}", self.ram))),
-            Step => self.step(),
-            StepToEnd => self.step_to_end().map(|_| ExecResult::None),
-            StepToBP => self.step_to_breakpoint().map(|_| ExecResult::None)
         };
 
         self.BZ += 1;

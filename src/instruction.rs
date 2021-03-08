@@ -2,7 +2,7 @@ use num_derive::FromPrimitive;
 use strum::EnumString;
 
 #[repr(u64)]
-#[derive(Clone, Copy, Debug, EnumString, FromPrimitive, derive_more::Display)]
+#[derive(Clone, Copy, Debug, EnumString, FromPrimitive, derive_more::Display, strum::EnumVariantNames)]
 pub enum Instruction {
     LOAD,
     DLOAD,
@@ -39,7 +39,7 @@ impl Instruction {
 impl Instruction {
     pub fn takes_value(self) -> bool {
         match self {
-            Self::END | Self::NOOP => false,
+            Self::END | Self::BP | Self::NOOP => false,
             _ => true
         }
     }
