@@ -8,12 +8,6 @@ pub struct ConsoleOut {
 }
 
 impl ConsoleOut {
-    pub fn new(s: String) -> Self {
-        Self {
-            buffer: Arc::new(Mutex::new(s))
-        }
-    }
-
     pub fn read(&self) -> String {
         self.buffer.lock().clone()
     }

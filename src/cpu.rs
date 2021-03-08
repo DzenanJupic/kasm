@@ -57,6 +57,9 @@ impl<W> CPU<W>
         self.ram = ram;
     }
 
+    pub fn set_BZ(&mut self, BZ: URS) {
+        self.BZ = BZ;
+    }
 
     pub fn step_to_breakpoint(&mut self, max_steps: u64) -> Result<()> {
         let mut steps = 0;

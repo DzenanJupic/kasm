@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::borrow::Borrow;
 use std::io::Write;
 
@@ -5,10 +7,9 @@ use itertools::Itertools;
 use num_traits::FromPrimitive;
 use seed::{*, prelude::*};
 use strum::VariantNames;
-use wasm_bindgen::prelude::*;
 
 use console::ConsoleOut;
-use kasm::{cpu::{CPU, ExecResult}, Error, lexer::Document, RAM, Result};
+use kasm::{cpu::{CPU, ExecResult}, lexer::Document, RAM};
 use kasm::instruction::Instruction;
 
 mod console;
@@ -31,7 +32,7 @@ struct Model {
     show_help: bool,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum Msg {
     Step,
     StepToBreakPoint,
@@ -45,6 +46,8 @@ enum Msg {
 
     ShowHelp,
     CloseHelp,
+
+    BZChanged(String)
 }
 
 impl Model {
@@ -87,7 +90,7 @@ impl Model {
             }
 
             Msg::Reset => {
-                model.console = ConsoleOut::default();
+                model.console.clear();
                 model.cpu = CPU::new(RAM::default(), model.console.clone());
             }
             Msg::Compile => {
@@ -111,6 +114,14 @@ impl Model {
 
             Msg::ShowHelp => model.show_help = true,
             Msg::CloseHelp => model.show_help = false,
+
+            Msg::BZChanged(s) => {
+                if let Ok(BZ) = s.parse::<u64>() {
+                    model.cpu.set_BZ(BZ);
+                } else if s.is_empty() {
+                    model.cpu.set_BZ(0);
+                }
+            }
         }
     }
 
@@ -176,7 +187,7 @@ impl Model {
                 self.view_code_editor(),
                 self.view_ram(),
                 div![
-                    C!["col"],
+                    C!["col-6"],
                     
                     self.view_control_panel(),
                     self.view_registers(),
@@ -256,7 +267,8 @@ impl Model {
 
     fn view_control_panel(&self) -> Node<Msg> {
         div![
-            C!["row", "h-50", "d-flex", "flex-column", "justify-content-evenly"],
+            style! { St::Height => "30%" },
+            C!["row", "d-flex", "flex-column", "justify-content-evenly"],
             
             div![
                 C!["row"],
@@ -290,16 +302,31 @@ impl Model {
 
     fn view_registers(&self) -> Node<Msg> {
         div![
-            C!["row", "p-5", "h-50", "d-flex", "flex-column", "justify-content-center"],
+            style! { St::Height => "70%" },
+            C!["row", "d-flex", "flex-column", "justify-content-center"],
             
             
             div![
                 C!["row"],
                 
                 Self::view_register("A", None, self.cpu.A()),
-                div![C!["col", "m-2"]],
-                div![C!["col", "m-2"]],
-                Self::view_register("BZ", None, self.cpu.BZ()),
+                div![
+                    C!["col", "m-2", "border", "border-primary", "border-3", "text-center", "rounded"],
+                    div!["BZ"],
+                    div![
+                        input![
+                            input_ev(Ev::Input, Msg::BZChanged),
+                            attrs! {
+                                At::Type => "text",
+                                At::Value => self.cpu.BZ(),
+                            },
+                            style! {
+                                St::Border => "none",
+                            },
+                            C!["text-center"],
+                        ]
+                    ],
+                ]
             ],    
             self.cpu.Rx()
                 .iter()
@@ -370,10 +397,15 @@ impl Model {
             C!["position-absolute", "vh-100", "vw-100", IF!(!self.show_help => "d-none")],
             
             div![
-                style! { St::ZIndex => "2001" },
+                style! {
+                    St::ZIndex => "2001",
+                    St::MaxHeight => "80vh",
+                    St::OverflowY => "scroll",
+                    St::OverflowX => "hidden",
+                 },
                 ev(Ev::Click, |e| e.stop_propagation()),
                 C![
-                    "position-absolute", "top-50", "start-50", "translate-middle", "w-50",
+                    "position-absolute", "top-50", "start-50", "translate-middle",
                     "shadow-lg", "rounded", "bg-white"
                 ],
                 

@@ -22,3 +22,6 @@ members = [
     ".",
     "frontend"
 ]
+
+[profile.release]
+lto = "fat"
