@@ -137,7 +137,7 @@ impl<W> CPU<W>
             }
             ADD => self.calc(value, |a, rx| a.wrapping_add(rx)),
             SUB => self.calc(value, |a, rx| a.wrapping_sub(rx)),
-            MULT => self.calc(value, |a, rx| a.wrapping_sub(rx)),
+            MULT => self.calc(value, |a, rx| a.wrapping_mul(rx)),
             DIV => {
                 if value == 0 {
                     return Err(Error::DivideByZero { lhs: self.A, BZ: self.BZ });
