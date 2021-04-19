@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <title>KASM</title>
+
+    <link rel="stylesheet" href="/bootstrap.min-90f68156446e26b9.css">
+    
+    
+
+    <script src="bootstrap.bundle.min.js"></script>
+    <script src="ace/ace.js"></script>
+<style>
+    html, body {
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    input:focus {
+        outline: none;
+    }
+</style>
+<link rel="preload" href="/index-12f0792e53c8fc1d_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/index-12f0792e53c8fc1d.js"></head>
+
+<body>
+<div id="app"></div>
+<script type="module">import init from '/index-12f0792e53c8fc1d.js';init('/index-12f0792e53c8fc1d_bg.wasm');</script>
+
+<script>
+    let start_editor_interval = null;
+    let set_main_padding_interval = null;
+
+    let editor = null;
+
+    function start_editor() {
+        if (start_editor_interval !== null) {
+            try {
+                editor = ace.edit("editor");
+                editor.setTheme("ace/theme/dracula");
+                editor.session.setMode("ace/mode/text");
+
+                clearInterval(start_editor_interval);
+                start_editor_interval = null;
+            } catch (_) {
+            }
+        }
+    }
+
+    function set_main_padding() {
+        if (set_main_padding_interval !== null) {
+            try {
+                let header_height = document.getElementsByTagName("header")[0].offsetHeight;
+                let footer_height = document.getElementsByTagName("footer")[0].offsetHeight;
+                let main = document.getElementsByTagName("main")[0];
+                let ram_table = document.getElementById("ram-table");
+                let console = document.getElementById("console");
+
+                main.style.paddingTop = `${header_height}px`;
+                main.style.paddingBottom = `${footer_height}px`;
+                ram_table.style.maxHeight = `${main.offsetHeight - console.offsetHeight - header_height - footer_height}px`;
+
+                clearInterval(set_main_padding_interval);
+                set_main_padding_interval = null;
+            } catch (_) {
+            }
+        }
+    }
+
+    function get_editor_value() {
+        if (editor !== null) {
+            return editor.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        start_editor_interval = setInterval(start_editor, 100);
+        set_main_padding_interval = setInterval(set_main_padding, 100);
+    });
+    document.addEventListener('resize', () => {
+        set_main_padding_interval = setInterval(set_main_padding, 100);
+    });
+</script>
+
+</body></html>

@@ -23,6 +23,7 @@ pub enum ExecResult {
     Ended,
     HitBreakPoint,
     Print(String),
+    NotFinished
 }
 
 impl<W> CPU<W>
@@ -52,7 +53,11 @@ impl<W> CPU<W>
     pub fn ram(&self) -> &RAM {
         &self.ram
     }
-
+    
+    pub fn stdout(&self) -> &W {
+        &self.stdout
+    }
+    
     pub fn set_ram(&mut self, ram: RAM) {
         self.ram = ram;
     }
@@ -60,44 +65,36 @@ impl<W> CPU<W>
     pub fn set_BZ(&mut self, BZ: URS) {
         self.BZ = BZ;
     }
-
-    pub fn step_to_breakpoint(&mut self, max_steps: u64) -> Result<()> {
-        let mut steps = 0;
-
-        loop {
-            log::debug!("step | {:?}", self.BZ);
-            match self.step()? {
-                ExecResult::Ended | ExecResult::HitBreakPoint => break,
-                ExecResult::Print(t) => self.println(t.as_bytes())?,
-                _ => {
-                    steps += 1;
-                    if steps >= max_steps {
-                        return Err(Error::TooManySteps(steps));
-                    }
-                }
-            }
-        }
-
-        Ok(())
+    
+    pub fn reset_registers(&mut self) {
+        self.A = 0;
+        self.BZ = 0;
+        self.Rx = [0; DATA_REGISTERS];
     }
 
-    pub fn step_to_end(&mut self, max_steps: u64) -> Result<()> {
-        let mut steps = 0;
-
-        loop {
+    pub fn step_to_breakpoint(&mut self, max_steps: u64) -> Result<ExecResult> {
+        for _ in 0..max_steps {
             match self.step()? {
-                ExecResult::Ended => break,
-                ExecResult::Print(t) => self.println(t.as_bytes())?,
-                _ => {
-                    steps += 1;
-                    if steps >= max_steps {
-                        return Err(Error::TooManySteps(steps));
-                    }
-                }
+                res @ ExecResult::Ended | 
+                res @ ExecResult::HitBreakPoint => return Ok(res),
+                ExecResult::Print(t) => self.println(&t)?,
+                _ => {}
+            }
+        }
+        
+        Ok(ExecResult::NotFinished)
+    }
+
+    pub fn step_to_end(&mut self, max_steps: u64) -> Result<ExecResult> {
+        for _ in 0..max_steps {
+            match self.step()? {
+                res @ ExecResult::Ended => return Ok(res),
+                ExecResult::Print(t) => self.println(&t)?,
+                _ => {}
             }
         }
 
-        Ok(())
+        Ok(ExecResult::NotFinished)
     }
 
     pub fn step(&mut self) -> Result<ExecResult> {
@@ -139,7 +136,7 @@ impl<W> CPU<W>
             SUB => self.calc(value, |a, rx| a.wrapping_sub(rx)),
             MULT => self.calc(value, |a, rx| a.wrapping_mul(rx)),
             DIV => {
-                if value == 0 {
+                if self.get_rx(value)? == 0 {
                     return Err(Error::DivideByZero { lhs: self.A, BZ: self.BZ });
                 }
                 self.calc(value, |a, rx| a.wrapping_div(rx))
@@ -231,10 +228,8 @@ impl<W> CPU<W>
         }
     }
 
-    fn println(&mut self, bytes: &[u8]) -> Result<()> {
-        self.stdout.write_all(bytes)?;
-        self.stdout.write_all(b"\n")?;
-
+    pub fn println(&mut self, s: &str) -> Result<()> {
+        writeln!(self.stdout, "{}", s)?;
         Ok(())
     }
 }

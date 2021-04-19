@@ -16,7 +16,7 @@ dload 79    ; O
 store 7
 dload 82    ; R
 store 8
-dload 79    ; L
+dload 76    ; L
 store 9
 dload 68    ; D
 store 10

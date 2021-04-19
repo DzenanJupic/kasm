@@ -1,4 +1,3 @@
-#![feature(str_split_once, bool_to_option, never_type)]
 #![allow(non_snake_case)]
 
 pub use error::Error;

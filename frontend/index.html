@@ -28,39 +28,29 @@
 </body>
 <script>
     let start_editor_interval = null;
-    let set_main_padding_interval = null;
-
     let editor = null;
 
     function start_editor() {
         if (start_editor_interval !== null) {
             try {
                 editor = ace.edit("editor");
-                editor.setTheme("ace/theme/dracula");
-                editor.session.setMode("ace/mode/text");
 
                 clearInterval(start_editor_interval);
                 start_editor_interval = null;
-            } catch (_) {
-            }
-        }
-    }
 
-    function set_main_padding() {
-        if (set_main_padding_interval !== null) {
-            try {
-                let header_height = document.getElementsByTagName("header")[0].offsetHeight;
-                let footer_height = document.getElementsByTagName("footer")[0].offsetHeight;
-                let main = document.getElementsByTagName("main")[0];
-                let ram_table = document.getElementById("ram-table");
-                let console = document.getElementById("console");
+                editor.setTheme("ace/theme/dracula");
+                editor.session.setMode("ace/mode/text");
+                editor.setFontSize(15);
 
-                main.style.paddingTop = `${header_height}px`;
-                main.style.paddingBottom = `${footer_height}px`;
-                ram_table.style.maxHeight = `${main.offsetHeight - console.offsetHeight - header_height - footer_height}px`;
+                let editor_value = localStorage.getItem("editor_value");
+                if (editor_value !== null) {
+                    editor.setValue(editor_value, -1);
+                    editor.clearSelection();
+                }
 
-                clearInterval(set_main_padding_interval);
-                set_main_padding_interval = null;
+                editor.getSession().on('change', function () {
+                    localStorage.setItem("editor_value", get_editor_value());
+                })
             } catch (_) {
             }
         }
@@ -74,12 +64,38 @@
         }
     }
 
+    function set_editor_font_size(font_size) {
+        if (editor !== null) {
+            editor.setFontSize(font_size);
+        } else {
+            setTimeout(
+                () => set_editor_font_size(font_size),
+                100
+            )
+        }
+    }
+
+    function set_editor_error(row, text) {
+        if (editor !== null) {
+            editor.session.setAnnotations([{
+                row: row,
+                column: 1,
+                text: text,
+                type: "error"
+            }]);
+        }
+    }
+    
+    function clear_editor_annotations() {
+        if (editor !== null) {
+            editor.session.clearAnnotations();
+        }
+    }
+    
+    
+
     document.addEventListener('DOMContentLoaded', () => {
         start_editor_interval = setInterval(start_editor, 100);
-        set_main_padding_interval = setInterval(set_main_padding, 100);
-    });
-    document.addEventListener('resize', () => {
-        set_main_padding_interval = setInterval(set_main_padding, 100);
     });
 </script>
 </html>

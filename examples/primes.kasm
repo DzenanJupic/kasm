@@ -1,0 +1,73 @@
+; Rx[0] = number to check
+; Rx[1] = 1
+; Rx[2] = 2
+; Rx[3] = counter
+
+dload 1         ; A = 1
+store 1         ; Rx[1] = A
+dload 2         ; A = 2
+store 2         ; Rx[2] = A
+
+; we manually report 2 and 3 to be
+; able to optimize the calculation
+; of futher primes
+int 2           ; print A (2)
+bp              ; breakpoint
+add 1           ; A += 1
+store 0         ; store 3 as number
+jump .report_prime
+
+.check_next_number:
+    ; increase the current number by 2
+    load 0      ; A = number
+    add 2       ; A += 2
+    store 0     ; number = A
+    
+    ; set the inital counter to 2
+    ; we do this, since 
+    ; .check_next_counter will increase
+    ; the counter by 1 (so counter == 3)
+    ; and since we skip even numbers
+    ; we don't need to check for 2
+    dload 2     ; A = 2
+    store 3     ; counter = A
+    
+.check_next_counter:
+    ; increase the counter by one
+    load 3      ; A = counter
+    add 1       ; A += 1
+    store 3     ; counter = A
+    
+    ; if counter^2 > number we could
+    ; not find any counter the number
+    ; can be divided by, and since
+    ; we don't have to check counters
+    ; greater or equal to number^(1/2)
+    ; we report it
+    mult 3      ; A *= counter
+    sub 0       ; A -= number
+    jgt .report_prime
+    
+    ; else we check if the number can
+    ; be divided by the counter
+    load 0      ; A = number
+    div 3       ; A /= counter
+    mult 3      ; A *= counter
+    sub 0       ; A -= number
+    
+    ; if the final result is 0
+    ; the number can be divided by the
+    ; current counter
+    ; Therefore it's not a prime
+    ; and we check the next number
+    jeq .check_next_number
+    
+    ; else we check the next counter
+    jump .check_next_counter
+    
+    
+.report_prime:
+    load 0      ; A = number
+    int 2       ; print A
+    bp          ; break point
+    jump .check_next_number
