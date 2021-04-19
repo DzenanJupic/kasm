@@ -6,6 +6,7 @@ use num_traits::FromPrimitive;
 use crate::{DATA_REGISTERS, Error, IRS, RAM, Result, URS};
 use crate::instruction::Instruction;
 use crate::interrupt::Interrupt;
+use std::num::NonZeroU64;
 
 #[derive(Debug)]
 pub struct CPU<W> {
@@ -58,12 +59,12 @@ impl<W> CPU<W>
         &self.stdout
     }
     
-    pub fn set_ram(&mut self, ram: RAM) {
-        self.ram = ram;
+    pub fn BZ_mut(&mut self) -> &mut URS {
+        &mut self.BZ
     }
-
-    pub fn set_BZ(&mut self, BZ: URS) {
-        self.BZ = BZ;
+    
+    pub fn ram_mut(&mut self) -> &mut RAM { 
+        &mut self.ram
     }
     
     pub fn reset_registers(&mut self) {
@@ -72,8 +73,8 @@ impl<W> CPU<W>
         self.Rx = [0; DATA_REGISTERS];
     }
 
-    pub fn step_to_breakpoint(&mut self, max_steps: u64) -> Result<ExecResult> {
-        for _ in 0..max_steps {
+    pub fn step_to_breakpoint(&mut self, max_steps: NonZeroU64) -> Result<ExecResult> {
+        for _ in 0..max_steps.get() {
             match self.step()? {
                 res @ ExecResult::Ended | 
                 res @ ExecResult::HitBreakPoint => return Ok(res),
@@ -85,8 +86,8 @@ impl<W> CPU<W>
         Ok(ExecResult::NotFinished)
     }
 
-    pub fn step_to_end(&mut self, max_steps: u64) -> Result<ExecResult> {
-        for _ in 0..max_steps {
+    pub fn step_to_end(&mut self, max_steps: NonZeroU64) -> Result<ExecResult> {
+        for _ in 0..max_steps.get() {
             match self.step()? {
                 res @ ExecResult::Ended => return Ok(res),
                 ExecResult::Print(t) => self.println(&t)?,

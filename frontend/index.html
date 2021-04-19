@@ -42,21 +42,21 @@
                 editor.session.setMode("ace/mode/text");
                 editor.setFontSize(15);
 
-                let editor_value = localStorage.getItem("editor_value");
-                if (editor_value !== null) {
-                    editor.setValue(editor_value, -1);
+                let code = localStorage.getItem("code");
+                if (code !== null) {
+                    editor.setValue(code, -1);
                     editor.clearSelection();
                 }
 
                 editor.getSession().on('change', function () {
-                    localStorage.setItem("editor_value", get_editor_value());
+                    localStorage.setItem("code", get_code());
                 })
             } catch (_) {
             }
         }
     }
 
-    function get_editor_value() {
+    function get_code() {
         if (editor !== null) {
             return editor.getValue();
         } else {

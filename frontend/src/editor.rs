@@ -4,17 +4,17 @@ use crate::Msg;
 
 #[wasm_bindgen]
 extern "C" {
-    fn get_editor_value() -> Option<String>;
+    fn get_code() -> Option<String>;
     fn set_editor_font_size(font_size: u8);
-    fn set_editor_error(row: i64, msg: String);
+    fn set_editor_error(row: usize, msg: String);
     fn clear_editor_annotations();
 }
 
 pub struct Editor;
 
 impl Editor {
-    pub fn get_value(&self) -> Option<String> {
-        get_editor_value()
+    pub fn get_code(&self) -> Option<String> {
+        get_code()
     }
     
     #[allow(unused_mut)]
@@ -23,8 +23,8 @@ impl Editor {
     }
     
     #[allow(unused_mut)]
-    pub fn set_error(&mut self, row: i64, msg: String) {
-        set_editor_error(row, msg)
+    pub fn set_error(&mut self, row: usize, msg: String) {
+        set_editor_error(row.saturating_sub(1), msg)
     }
     
     #[allow(unused_mut)]
@@ -42,25 +42,5 @@ impl Editor {
                 include_str!("../../examples/hello_world.kasm")
             ]
         ]
-    }
-}
-
-#[derive(Clone)]
-pub enum EditorMsg {
-    SetError {
-        line: i64,
-        msg: String
-    },
-    ClearErrors
-}
-
-pub fn update_editor(msg: EditorMsg, editor: &mut Editor) {
-    match msg {
-        EditorMsg::SetError { line, msg } => {
-            editor.set_error(line, msg);
-        }
-        EditorMsg::ClearErrors => {
-            editor.clear_errors();
-        }
     }
 }

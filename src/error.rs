@@ -31,7 +31,8 @@ pub enum Error {
 
     #[error(
     "The CPU made {0} steps in a row without a break\n\
-     Note: You probably entered an endless loop"
+     Note: You probably entered an endless loop\n\
+     Note: To allow endless loops, check the continue after max steps setting"
     )]
     TooManySteps(u64),
 

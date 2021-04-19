@@ -5,16 +5,11 @@ use seed::{*, prelude::*};
 
 use crate::Msg;
 
-const MAX_BUFFER_SIZE: usize = 100_000;
+const MAX_BUFFER_SIZE: usize = 10_000;
 
 #[derive(Clone, Debug, Default)]
 pub struct ConsoleOut {
     buffer: Arc<Mutex<String>>
-}
-
-#[derive(Clone)]
-pub enum ConsoleMsg {
-    Clear
 }
 
 impl ConsoleOut {
@@ -50,7 +45,8 @@ impl ConsoleOut {
         }
 
         if buffer.len() > MAX_BUFFER_SIZE {
-            buffer.drain(0..buffer.len() / 2);
+            let middle = buffer.len() / 2;
+            buffer.drain(0..middle);
             let first_new_line = buffer
                 .find('\n')
                 .unwrap_or(0);
@@ -76,14 +72,6 @@ impl ConsoleOut {
             ]
         ]
     }
-
-    pub fn update(msg: ConsoleMsg, console: &mut ConsoleOut) {
-        match msg {
-            ConsoleMsg::Clear => {
-                console.clear();
-            }
-        }
-    }
 }
 
 impl std::io::Write for ConsoleOut {
@@ -94,6 +82,7 @@ impl std::io::Write for ConsoleOut {
                 "The buffer to write contains invalid utf-8 bytes",
             ))?;
         
+        self.write_str(s);
         Ok(buf.len())
     }
 
