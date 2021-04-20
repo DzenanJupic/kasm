@@ -1,6 +1,7 @@
+use std::num::NonZeroU64;
+
 use seed::prelude::{*, web_sys::Storage};
 use wasm_bindgen::JsValue;
-use std::num::NonZeroU64;
 
 #[wasm_bindgen]
 extern "C" {
@@ -44,6 +45,29 @@ impl Settings {
             &serde_json::to_string(self)
                 .expect("Serializing Settings will never fail"),
         )
+    }
+}
+
+macro_rules! toggle {
+    ($($field:ident)*) => {
+        $(
+            concat_idents::concat_idents! (fn_name = toggle_, $field {
+                pub fn fn_name(&mut self) {
+                    self.$field ^= true;
+                    let _ = self.save_to_storage();
+                }
+            });
+        )*
+    };
+}
+
+impl Settings {
+    toggle! {
+        continue_after_max_steps
+        show_instruction_names
+        show_data_registers
+        show_help
+        show_settings
     }
 }
 

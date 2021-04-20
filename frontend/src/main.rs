@@ -1,13 +1,15 @@
 #![allow(non_snake_case)]
+
 use std::io::Write;
+use std::num::NonZeroU64;
+
 use seed::{*, prelude::*};
 
-use console::{ConsoleOut};
-use kasm::{cpu::CPU, RAM, Error};
+use console::ConsoleOut;
+use kasm::{cpu::CPU, Error, RAM};
 
 use crate::editor::Editor;
-use crate::settings::{Settings, CpuMode};
-use std::num::NonZeroU64;
+use crate::settings::{CpuMode, Settings};
 
 mod console;
 mod editor;
@@ -125,26 +127,31 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             &model.settings,
             Msg::Step,
             &model.console,
-            orders
+            orders,
         ),
         Msg::ResetRegisters => model.cpu.reset_registers(),
         Msg::BZChanged(s) => helpers::parse_from_str_into(&s, model.cpu.BZ_mut()),
-        
-        Msg::ToggleShowInstructionNames => model.settings.show_instruction_names ^= true,
-        Msg::ToggleShowDataRegisters => model.settings.show_data_registers ^= true,
-        Msg::ToggleShowHelp => model.settings.show_help ^= true,
-        Msg::ToggleShowSettings => model.settings.show_settings ^= true,
-        Msg::ToggleContinueAfterMaxSteps => model.settings.continue_after_max_steps ^= true,
-        Msg::SetEditorFontSize(s) => helpers::parse_from_str_into(&s, &mut model.settings.editor_font_size),
-        Msg::SetMaxStepsBetweenRender(s) => helpers::parse_from_str_into_or(&s, &mut model.settings.max_steps_between_render, NonZeroU64::new(1).unwrap()),
-        
+
+        Msg::ToggleShowInstructionNames => model.settings.toggle_show_instruction_names(),
+        Msg::ToggleShowDataRegisters => model.settings.toggle_show_data_registers(),
+        Msg::ToggleShowHelp => model.settings.toggle_show_help(),
+        Msg::ToggleShowSettings => model.settings.toggle_show_settings(),
+        Msg::ToggleContinueAfterMaxSteps => model.settings.toggle_continue_after_max_steps(),
+
+        Msg::SetEditorFontSize(s) => {
+            helpers::parse_from_str_into(&s, &mut model.settings.editor_font_size);
+            model.editor.set_font_size(model.settings.editor_font_size);
+            let _ = model.settings.save_to_storage();
+        }
+        Msg::SetMaxStepsBetweenRender(s) => {
+            helpers::parse_from_str_into_or(&s, &mut model.settings.max_steps_between_render, NonZeroU64::new(1).unwrap());
+            let _ = model.settings.save_to_storage();
+        }
+
         Msg::ClearConsole => model.console.clear(),
         Msg::SetError { line, msg } => model.editor.set_error(line, msg),
         Msg::ClearErrors => model.editor.clear_errors()
     }
-    
-    // fixme
-    let _ = model.settings.save_to_storage();
 }
 
 fn view(model: &Model) -> Node<Msg> {
