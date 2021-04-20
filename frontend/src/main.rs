@@ -1,13 +1,22 @@
 #![allow(non_snake_case)]
+
+use std::convert::TryFrom;
+use std::fmt::{Debug, Display};
 use std::io::Write;
+use std::num::NonZeroUsize;
+use std::str::FromStr;
+
+use byte_slice_cast::ToByteSlice;
+use num_traits::{AsPrimitive, Num, Signed};
 use seed::{*, prelude::*};
 
-use console::{ConsoleOut};
-use kasm::{cpu::CPU, RAM, Error};
+use console::ConsoleOut;
+use kasm::{cpu::CPU, Error, RAM, URS};
+use kasm::instruction::Instruction;
+use kasm::interrupt::Interrupt;
 
 use crate::editor::Editor;
-use crate::settings::{Settings, CpuMode};
-use std::num::NonZeroU64;
+use crate::settings::{CpuMode, Settings};
 
 mod console;
 mod editor;
@@ -19,8 +28,9 @@ mod views;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 
-pub struct Model {
-    cpu: CPU<ConsoleOut>,
+#[derive(Debug)]
+pub struct Model<IRS> {
+    cpu: CPU<IRS, ConsoleOut>,
     console: ConsoleOut,
     editor: Editor,
     settings: Settings,
@@ -36,6 +46,7 @@ pub enum Msg {
     StepToEnd,
     StepToBreakpoint,
     ResetRegisters,
+    ResetRam,
     BZChanged(String),
 
     ToggleShowInstructionNames,
@@ -46,17 +57,18 @@ pub enum Msg {
 
     SetEditorFontSize(String),
     SetMaxStepsBetweenRender(String),
-    
+    SetCpuMode(String),
+
     ClearConsole,
 
     SetError {
         line: usize,
-        msg: String
+        msg: String,
     },
-    ClearErrors
+    ClearErrors,
 }
 
-fn init(_url: Url, _orders: &mut impl Orders<Msg>) -> Model {
+fn init<IRS: Default + Copy>(_url: Url, _orders: &mut impl Orders<Msg>) -> Model<IRS> {
     let console = ConsoleOut::default();
     let cpu = CPU::new(RAM::default(), console.clone());
     let settings = Settings::from_storage().unwrap_or(Settings::default());
@@ -71,12 +83,21 @@ fn init(_url: Url, _orders: &mut impl Orders<Msg>) -> Model {
     }
 }
 
-fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
+fn update<IRS>(msg: Msg, model: &mut Model<IRS>, orders: &mut impl Orders<Msg>)
+    where
+        IRS: Num + Copy + Debug + Display + FromStr + AsPrimitive<URS> + 'static,
+        IRS: PartialOrd + ToByteSlice + Signed + Default,
+        Instruction: TryFrom<IRS>,
+        Interrupt: TryFrom<IRS>,
+        usize: AsPrimitive<IRS> {
+    log::debug!("{:#?}", model);
+
     match msg {
         Msg::Run => {
             orders
                 .send_msg(Msg::ClearConsole)
                 .send_msg(Msg::ResetRegisters)
+                .send_msg(Msg::ResetRam)
                 .send_msg(Msg::ClearErrors)
                 .send_msg(Msg::Compile)
                 .send_msg(Msg::StepToEnd);
@@ -85,6 +106,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders
                 .send_msg(Msg::ClearConsole)
                 .send_msg(Msg::ResetRegisters)
+                .send_msg(Msg::ResetRam)
                 .send_msg(Msg::ClearErrors);
         }
         Msg::Compile => {
@@ -114,7 +136,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders
         ),
         Msg::StepToEnd => helpers::handle_step_to_res(
-            model.cpu.step_to_end(model.settings.max_steps_between_render), 
+            model.cpu.step_to_end(model.settings.max_steps_between_render),
             &model.settings,
             Msg::StepToEnd,
             &model.console,
@@ -125,19 +147,24 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             &model.settings,
             Msg::Step,
             &model.console,
-            orders
+            orders,
         ),
         Msg::ResetRegisters => model.cpu.reset_registers(),
+        Msg::ResetRam => *model.cpu.ram_mut() = RAM::default(),
         Msg::BZChanged(s) => helpers::parse_from_str_into(&s, model.cpu.BZ_mut()),
-        
+
         Msg::ToggleShowInstructionNames => model.settings.show_instruction_names ^= true,
         Msg::ToggleShowDataRegisters => model.settings.show_data_registers ^= true,
         Msg::ToggleShowHelp => model.settings.show_help ^= true,
         Msg::ToggleShowSettings => model.settings.show_settings ^= true,
         Msg::ToggleContinueAfterMaxSteps => model.settings.continue_after_max_steps ^= true,
         Msg::SetEditorFontSize(s) => helpers::parse_from_str_into(&s, &mut model.settings.editor_font_size),
-        Msg::SetMaxStepsBetweenRender(s) => helpers::parse_from_str_into_or(&s, &mut model.settings.max_steps_between_render, NonZeroU64::new(1).unwrap()),
-        
+        Msg::SetMaxStepsBetweenRender(s) => helpers::parse_from_str_into_or(&s, &mut model.settings.max_steps_between_render, NonZeroUsize::new(1).unwrap()),
+        Msg::SetCpuMode(s) => {
+            helpers::parse_from_str_into(&s, &mut model.settings.cpu_mode);
+            let _ = model.settings.save_to_storage_and_reload();
+        }
+
         Msg::ClearConsole => model.console.clear(),
         Msg::SetError { line, msg } => model.editor.set_error(line, msg),
         Msg::ClearErrors => model.editor.clear_errors()
@@ -147,7 +174,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     let _ = model.settings.save_to_storage();
 }
 
-fn view(model: &Model) -> Node<Msg> {
+fn view<IRS: Copy + UpdateEl<Msg>>(model: &Model<IRS>) -> Node<Msg> {
     div![
         C!["d-flex", "flex-column", "vh-100"],
         
@@ -174,16 +201,29 @@ fn main() {
     
     match cpu_mode {
         CpuMode::Integer64 => {
-            
+            seed::App::<Msg, Model<i64>, _>::start(
+                "app",
+                init,
+                update,
+                view,
+            );
         }
-        CpuMode::Integer128 => {}
-        CpuMode::FloatingPoint64 => {}
+        // CpuMode::Integer128 => {
+        //     seed::App::<Msg, Model<i128>, _>::start(
+        //         "app",
+        //         init,
+        //         update,
+        //         view,
+        //     );
+        // }
+        CpuMode::FloatingPoint64 => {
+            seed::App::<Msg, Model<f64>, _>::start(
+                "app",
+                init,
+                update,
+                view,
+            );
+        }
     }
     
-    seed::App::start(
-        "app",
-        init,
-        update,
-        view,
-    );
 }

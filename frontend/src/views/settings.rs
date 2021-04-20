@@ -1,7 +1,9 @@
-use crate::Msg;
 use seed::{*, prelude::*};
-use crate::settings::Settings;
+use strum::VariantNames;
 
+use crate::Msg;
+use crate::settings::CpuMode;
+use crate::settings::Settings;
 
 pub fn view(settings: &Settings) -> Node<Msg> {
     crate::views::popup::view(
@@ -50,9 +52,17 @@ pub fn view(settings: &Settings) -> Node<Msg> {
                 view_setting_switch(
                     "continueAfterMaxSteps",
                     "Continue to step after the CPU hit the max steps between rendering",
-                    "Continue after max CPU steps [allows endless loops]",
+                    "Continue after max CPU steps (allows endless loops)",
                     Msg::ToggleContinueAfterMaxSteps,
                     settings.continue_after_max_steps
+                ),
+                view_setting_select(
+                    "setCpuMode",
+                    "The datatype that is used to represent the A register and the data registers",
+                    "CPU mode (changes lead to a page reload)",
+                    Msg::SetCpuMode,
+                    CpuMode::VARIANTS,
+                    settings.cpu_mode.into()
                 ),
             ]
     )
@@ -119,6 +129,48 @@ fn view_setting_input(
                 At::Type => input_type,
                 At::Value => value,
             },
+        ]
+    ]
+}
+
+fn view_setting_select(
+    id: &str,
+    title: &str,
+    label: &str,
+    msg: fn(String) -> Msg,
+    options: &[&str],
+    value: &str,
+) -> Node<Msg> {
+    div![
+        C!["input-group", "row", "mx-auto", "my-1"],
+        
+        label![
+            C!["input-group-text", "w-50"],
+            attrs! {
+                At::For => id,
+                At::Title => title,
+            },
+            
+            label
+        ],
+        select![
+            id!(id),
+            input_ev(Ev::Input, msg),
+            C!["form-select", "w-50"],
+            style! { St::TextAlignLast => "center" },
+            
+            options
+                .iter()
+                .map(|option| {
+                    option![
+                        C!["text-center"],
+                        attrs! {
+                            At::Value => option
+                            At::Selected => (*option == value).as_at_value()
+                        },
+                        option
+                    ]    
+                })
         ]
     ]
 }

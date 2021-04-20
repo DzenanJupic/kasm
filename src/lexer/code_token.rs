@@ -1,14 +1,15 @@
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
-use num_traits::FromPrimitive;
+use num_traits::{AsPrimitive, FromPrimitive};
 
-use crate::{IRS, URS};
+use crate::URS;
 use crate::error::ParseError;
 use crate::instruction::Instruction;
 use crate::lexer::jump_point::JumpPoint;
 
 #[derive(Clone, Debug, derive_more::Display)]
-pub enum CodeToken {
+pub enum CodeToken<IRS> {
     #[display(fmt = "{}", _0)]
     Inst(Instruction),
     #[display(fmt = "{}", _0)]
@@ -21,8 +22,9 @@ pub enum CodeToken {
     JumpPointDeclaration(JumpPoint),
 }
 
-impl CodeToken {
-    pub fn from_str(s: &str) -> crate::Result<Self, ParseError> {
+impl<IRS: Debug + Display + FromStr + AsPrimitive<URS> + Copy + 'static> CodeToken<IRS>
+    where URS: AsPrimitive<IRS> {
+    pub fn from_str(s: &str) -> Result<Self, ParseError<IRS>> {
         let ref s = s.to_uppercase();
 
         if let Some(inst) = Self::parse(s) {
@@ -56,9 +58,9 @@ impl CodeToken {
         use CodeToken::*;
 
         match *self {
-            Inst(inst) => inst as URS,
-            Val(val) => val as URS,
-            Code(code) => code as URS,
+            Inst(inst) => inst as u64 as URS,
+            Val(val) => val.as_(),
+            Code(code) => code,
             JumpPoint(_) | JumpPointDeclaration(_) => {
                 panic!("JumpPoints and JumpPointDeclarations must be resolved before converting to URS")
             }
@@ -69,9 +71,9 @@ impl CodeToken {
         use CodeToken::*;
 
         match *self {
-            Inst(inst) => inst as URS as IRS,
+            Inst(inst) => (inst as URS).as_(),
             Val(val) => val as IRS,
-            Code(code) => code as IRS,
+            Code(code) => code.as_(),
             JumpPoint(_) | JumpPointDeclaration(_) => {
                 panic!("JumpPoints and JumpPointDeclarations must be resolved before converting to URS")
             }
@@ -96,7 +98,7 @@ impl CodeToken {
         match self {
             Self::Inst(inst) => inst.takes_value(),
             Self::Code(c) => {
-                Instruction::from_u64(*c)
+                Instruction::from_usize(*c)
                     .map(Instruction::takes_value)
                     .unwrap_or(true)
             }
@@ -116,10 +118,13 @@ impl CodeToken {
     }
 }
 
-impl FromStr for CodeToken {
-    type Err = ParseError;
+impl<IRS> FromStr for CodeToken<IRS>
+    where
+        IRS: Debug + Copy + Display + FromStr + AsPrimitive<URS> + 'static,
+        usize: AsPrimitive<IRS> {
+    type Err = ParseError<IRS>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_str(s)
+        CodeToken::from_str(s)
     }
 }

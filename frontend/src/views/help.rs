@@ -1,8 +1,9 @@
-use crate::{Model, Msg};
 use seed::{*, prelude::*};
 use strum::VariantNames;
 
-pub fn view(model: &Model) -> Node<Msg> {
+use crate::{Model, Msg};
+
+pub fn view<IRS>(model: &Model<IRS>) -> Node<Msg> {
     crate::views::popup::view(
         model,
         |model| model.settings.show_help,

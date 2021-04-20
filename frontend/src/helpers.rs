@@ -1,7 +1,9 @@
+use std::fmt::Display;
 use std::io::Write;
 use std::str::FromStr;
 
 use seed::prelude::*;
+use seed::prelude::wasm_bindgen::__rt::core::fmt::Debug;
 
 use kasm::{cpu::ExecResult, Error};
 
@@ -20,8 +22,8 @@ pub fn parse_from_str_into_or<T: FromStr>(value: &str, into: &mut T, default: T)
     }
 }
 
-pub fn handle_step_to_res(
-    res: Result<ExecResult, Error>,
+pub fn handle_step_to_res<IRS: Debug + Display>(
+    res: Result<ExecResult, Error<IRS>>,
     settings: &Settings,
     not_finished_msg: Msg,
     console: &ConsoleOut,
@@ -32,7 +34,7 @@ pub fn handle_step_to_res(
             orders.perform_cmd(seed::prelude::cmds::timeout(1, move || not_finished_msg));
         }
         Ok(ExecResult::NotFinished) => {
-            let err = Error::TooManySteps(settings.max_steps_between_render.get());
+            let err = Error::<i64>::TooManySteps(settings.max_steps_between_render.get());
             writeln!(console.clone(), "{}", err)
                 .expect("ConsoleOut will never fail");
         }

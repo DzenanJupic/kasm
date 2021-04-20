@@ -1,10 +1,12 @@
+use std::fmt::{Debug, Display};
+
 use thiserror::Error;
 
-use crate::{IRS, URS};
+use crate::URS;
 use crate::lexer::code_token::CodeToken;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum Error<IRS: Debug + Display> {
     #[error(
     "The instruction code `{inst}` at BZ={BZ} is not a valid instruction\n\
     Note: Execute `/instructions` in the shell to get a list of all instructions"
@@ -34,7 +36,7 @@ pub enum Error {
      Note: You probably entered an endless loop\n\
      Note: To allow endless loops, check the continue after max steps setting"
     )]
-    TooManySteps(u64),
+    TooManySteps(URS),
 
     #[error("The jump point {name} in line {line} is not defined in the document")]
     UndefinedJumpPoint { name: String, line: usize },
@@ -42,29 +44,29 @@ pub enum Error {
     "Failed to parse `{s}` in line {line}\n\
     Details: {err}"
     )]
-    ParsingFailed { s: String, line: usize, err: ParseError },
+    ParsingFailed { s: String, line: usize, err: ParseError<IRS> },
     #[error(
     "The provided combination of tokens in line {line} is invalid\n\
     Details: {err}"
     )]
-    InvalidTokenArrangement { line: usize, err: ParseError },
+    InvalidTokenArrangement { line: usize, err: ParseError<IRS> },
 
     #[error(transparent)]
     IO(#[from] std::io::Error),
 }
 
 #[derive(Error, Debug)]
-pub enum ParseError {
+pub enum ParseError<IRS: Debug + Display> {
     #[error("Failed to parse the unknown token `{token}`")]
     UnknownToken { token: String },
     #[error("The line `{line}` contains more then two tokens")]
     TooManyTokens { line: String },
     #[error("The token `{token}` may not be the first in a line")]
-    TokenMayNotBeFirst { token: CodeToken },
+    TokenMayNotBeFirst { token: CodeToken<IRS> },
     #[error("The token `{token}` may not be the second in a line")]
-    TokenMayNotBeSecond { token: CodeToken },
+    TokenMayNotBeSecond { token: CodeToken<IRS> },
     #[error("The token `{token}` does take an argument, but no argument was supplied")]
-    TokenDoesTakeAnArgument { token: CodeToken },
+    TokenDoesTakeAnArgument { token: CodeToken<IRS> },
     #[error("The token `{token}` does not take an argument")]
-    TokenDoesNotTakeAnArgument { token: CodeToken },
+    TokenDoesNotTakeAnArgument { token: CodeToken<IRS> },
 }

@@ -1,9 +1,11 @@
-use crate::{Model, Msg};
-use seed::{*, prelude::*};
-use itertools::Itertools;
 use std::borrow::Borrow;
 
-pub fn view_registers(model: &Model) -> Node<Msg> {
+use itertools::Itertools;
+use seed::{*, prelude::*};
+
+use crate::{Model, Msg};
+
+pub fn view_registers<IRS: Copy + UpdateEl<Msg>>(model: &Model<IRS>) -> Node<Msg> {
     div![
             style! { St::Height => if model.settings.show_data_registers { "70%" } else { "40%" } },
             C!["row", "d-flex", "flex-column", "justify-content-center"],

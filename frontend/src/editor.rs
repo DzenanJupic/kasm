@@ -10,6 +10,7 @@ extern "C" {
     fn clear_editor_annotations();
 }
 
+#[derive(Debug)]
 pub struct Editor;
 
 impl Editor {

@@ -5,7 +5,9 @@ authors = ["Dzenan Jupic <56133904+DzenanJupic@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
+byte-slice-cast = "1.0.0"
 console_error_panic_hook = "0.1.6"
+derive_more = "0.99.13"
 itertools = "0.10.0"
 kasm = { path = "../" }
 log = "0.4.14"

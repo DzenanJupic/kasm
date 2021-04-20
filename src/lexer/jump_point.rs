@@ -12,7 +12,7 @@ impl AsRef<str> for JumpPoint {
 impl FromStr for JumpPoint {
     type Err = ();
 
-    fn from_str(s: &str) -> crate::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !(s.starts_with('.') && !s.ends_with(':') && s.chars().count() > 1) {
             return Err(());
         } else {

@@ -1,7 +1,8 @@
 use seed::{*, prelude::*};
-use crate::{Msg, Model};
 
-pub fn view(model: &Model) -> Node<Msg> {
+use crate::{Model, Msg};
+
+pub fn view<IRS: Copy + UpdateEl<Msg>>(model: &Model<IRS>) -> Node<Msg> {
     main![
         C!["flex-grow-1", "d-flex", "flex-column"],
         div![

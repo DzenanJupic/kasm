@@ -2,10 +2,9 @@
 
 pub use error::Error;
 
-pub type URS = u64;
-pub type IRS = i64;
-pub type RAM = Vec<(URS, IRS)>;
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type URS = usize;
+
+pub type RAM<IRS> = Vec<(URS, IRS)>;
 
 pub const DATA_REGISTERS: usize = 16;
 

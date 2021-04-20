@@ -1,8 +1,12 @@
 use std::collections::HashMap;
+use std::fmt::{Debug, Display};
+use std::str::FromStr;
+
+use num_traits::{AsPrimitive, Num};
 
 use code_token::CodeToken;
 
-use crate::{Error, IRS, RAM, Result};
+use crate::{Error, RAM, URS};
 use crate::instruction::Instruction;
 use crate::lexer::code_line::CodeLine;
 use crate::lexer::jump_point::JumpPoint;
@@ -14,19 +18,23 @@ pub mod jump_point;
 type CodeLineIndex = usize;
 
 #[derive(Debug)]
-pub struct Document {
-    code_lines: Vec<(CodeLineIndex, CodeLine)>
+pub struct Document<IRS> {
+    code_lines: Vec<(CodeLineIndex, CodeLine<IRS>)>
 }
 
-impl Document {
-    pub fn as_ram(&self) -> RAM {
+impl<IRS> Document<IRS>
+    where
+        IRS: Num + Debug + Display + FromStr + AsPrimitive<URS> + Copy + 'static,
+        usize: AsPrimitive<IRS>,
+        URS: AsPrimitive<IRS> {
+    pub fn as_ram(&self) -> RAM<IRS> {
         self.code_lines
             .iter()
             .map(|(_, cl)| cl.as_urs_irs())
             .collect()
     }
 
-    pub fn from_str(s: &str) -> Result<Self> {
+    pub fn from_str(s: &str) -> Result<Self, Error<IRS>> {
         let mut doc = Self::parse(s)?;
 
         doc.check()?;
@@ -35,7 +43,7 @@ impl Document {
         Ok(doc)
     }
 
-    fn parse(s: &str) -> Result<Self> {
+    fn parse(s: &str) -> Result<Self, Error<IRS>> {
         let mut code_lines = Vec::new();
 
         for (i, line) in s.lines().enumerate() {
@@ -54,7 +62,7 @@ impl Document {
         })
     }
 
-    fn check(&self) -> Result<()> {
+    fn check(&self) -> Result<(), Error<IRS>> {
         for &(i, ref code_line) in self.code_lines.iter() {
             code_line
                 .check()
@@ -67,7 +75,7 @@ impl Document {
         Ok(())
     }
 
-    fn resolve_jump_points(&mut self) -> Result<()> {
+    fn resolve_jump_points(&mut self) -> Result<(), Error<IRS>> {
         let jump_point_declarations = self.get_jump_point_declarations();
 
         for &mut (i, ref mut cl) in self.code_lines.iter_mut() {
@@ -80,7 +88,7 @@ impl Document {
                     }
                     _ => unreachable!(),
                 }
-                *ct = CodeToken::Val(*val as IRS);
+                *ct = CodeToken::Val(val.as_());
             }
         }
 
@@ -88,6 +96,7 @@ impl Document {
     }
 
     fn get_jump_point_declarations(&mut self) -> HashMap<String, usize> {
+        // todo: make duplicates an error
         self.code_lines
             .iter_mut()
             .enumerate()

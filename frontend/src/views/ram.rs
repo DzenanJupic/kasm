@@ -1,12 +1,14 @@
+use num_traits::FromPrimitive;
 use seed::{*, prelude::*};
-use crate::Msg;
-use crate::console::ConsoleOut;
+
 use kasm::cpu::CPU;
 use kasm::instruction::Instruction;
-use crate::settings::Settings;
-use num_traits::FromPrimitive;
 
-pub fn view(cpu: &CPU<ConsoleOut>, settings: &Settings) -> Node<Msg> {
+use crate::console::ConsoleOut;
+use crate::Msg;
+use crate::settings::Settings;
+
+pub fn view<IRS: Copy + UpdateEl<Msg>>(cpu: &CPU<IRS, ConsoleOut>, settings: &Settings) -> Node<Msg> {
     div![
         id!("ram-table"),
         C!["col", "p-0", "bg-secondary",  "overflow-auto", "position-relative"],
@@ -31,14 +33,14 @@ pub fn view(cpu: &CPU<ConsoleOut>, settings: &Settings) -> Node<Msg> {
                             tr![
                                 th![i],
                                 td![
-                                    C![IF!(cpu.BZ() == i as u64 => "table-active")],
-                                    match Instruction::from_u64(*inst) {
+                                    C![IF!(cpu.BZ() == i as usize => "table-active")],
+                                    match Instruction::from_usize(*inst) {
                                         Some(inst) if settings.show_instruction_names => inst.to_string(),
                                         _ => inst.to_string()
                                     }
                                 ],
                                 td![
-                                    C![IF!(cpu.BZ() == i as u64 => "table-active")],
+                                    C![IF!(cpu.BZ() == i as usize => "table-active")],
                                     val
                                 ],
                             ]
